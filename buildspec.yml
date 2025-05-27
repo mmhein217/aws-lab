@@ -1,0 +1,42 @@
+version: 0.2
+
+env:
+  variables:
+    IMAGE_REPO_NAME: simple-app-repo
+    CONTAINER_NAME: app-container
+    ECS_TASK_EXEC_ROLE: ecs-task-exec-role
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - IMAGE_TAG=$COMMIT_HASH
+      - echo $IMAGE_TAG
+  build:
+    commands:
+      - echo Build started on `date`
+      - docker build -t $IMAGE_REPO_NAME:latest .
+      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
+      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - docker push $REPOSITORY_URI:latest
+      - printf '[{"Name":"%s","ImageUri":"%s"}]' "${IMAGE_REPO_NAME}" "${REPOSITORY_URI}:${IMAGE_TAG}" > imagedefinitions.json
+      - sed -i "s|#APP_NAME|${IMAGE_REPO_NAME}|g" task_definitions.json
+      - sed -i "s|#AWS_ACCOUNT_ID|${AWS_ACCOUNT_ID}|g" task_definitions.json
+      - sed -i "s|#ROLE_NAME|${ECS_TASK_EXEC_ROLE}|g" task_definitions.json
+      - sed -i "s|#REGION|${AWS_DEFAULT_REGION}|g" task_definitions.json
+      - sed -i "s|#IMAGE_URI|${REPOSITORY_URI}:${IMAGE_TAG}|g" task_definitions.json
+      - echo "Resulting JSON:"
+      - cat task_definitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - task_definitions.json
+    - appspec.yml

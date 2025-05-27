@@ -1,0 +1,40 @@
+{
+  "executionRoleArn": "arn:aws:iam::#AWS_ACCOUNT_ID:role/#ROLE_NAME",
+  "taskRoleArn": "arn:aws:iam::#AWS_ACCOUNT_ID:role/#ROLE_NAME",
+  "containerDefinitions": [
+    {
+      "name": "main",
+      "image": "#IMAGE_URI",
+      "cpu": 256,
+      "memory": 512,
+      "essential": true,
+      "workingDirectory": "/app",
+      "mountPoints": [],
+      "readonlyRootFilesystem": true,
+      "portMappings": [
+        {
+          "name": "#APP_NAME",
+          "hostPort": 80,
+          "protocol": "tcp",
+          "containerPort": 80
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/#APP_NAME/main",
+          "awslogs-region": "#REGION",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "networkMode": "awsvpc",
+  "family": "#APP_NAME",
+  "cpu": "256",
+  "memory": "512",
+  "volume": []
+}
