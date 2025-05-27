@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    IMAGE_REPO_NAME: simple-app-repo
+    IMAGE_REPO_NAME: simple-app
     CONTAINER_NAME: app-container
     ECS_TASK_EXEC_ROLE: ecs-task-exec-role
 
